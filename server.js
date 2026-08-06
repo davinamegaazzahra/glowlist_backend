@@ -37,13 +37,13 @@ app.get('/produk', (req, res) => {
 });
 
 app.post('/produk', (req, res) => {
-    const { judul, deskripsi, harga, id_kategori } = req.body;
+    const { judul, deskripsi, harga, id_kategori, nama_file, tgl_input } = req.body;
 
-    if (!judul || !harga) {
-        return res.status(400).json({ message: 'Judul dan harga wajib diisi' });
+    if (!judul || !harga || !deskripsi) {
+        return res.status(400).json({ message: 'Judul, harga, deskripsi wajib diisi' });
     }
 
-    const sql = 'INSERT INTO produk (judul, deskripsi, harga, id_kategori, tgl_input) VALUES (?, ?, ?, ?, NOW())';
+    const sql = 'INSERT INTO produk (judul, deskripsi, harga, id_kategori, nama_file, tgl_input) VALUES (?, ?, ?, ?, ?, NOW())';
     db.query(sql, [judul, deskripsi, harga, id_kategori], (err, result) => {
         if (err) return res.status(500).json({ error: err.sqlMessage });
         res.json({
