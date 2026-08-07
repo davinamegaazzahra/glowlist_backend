@@ -53,6 +53,42 @@ app.post('/produk', (req, res) => {
     });
 });
 
+app.put('/produk/:id_produk', (req, res) => {
+    const { id_produk } = req.params;
+    const { judul, deskripsi, harga, id_kategori, nama_file, tgl_input } = req.body;
+
+    if (!judul || !harga || !deskripsi) {
+        return res.status(400).json({ message: 'Judul, harga, deskripsi wajib diisi' });
+    }
+
+    const sql = 'UPDATE produk SET judul=?, deskripsi=?, harga=?, id_kategori=?, nama_file=?, tgl_input=? WHERE id_produk=?';
+    db.query(sql, [judul, deskripsi, harga, id_kategori, nama_file, tgl_input, id_produk], (err, result) => {
+        if (err) return res.status(500).json({ error: err.sqlMessage });
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                message: 'Produk tidak ditemukan'
+            })
+        }
+        res.json({ message: 'Produk berhasil diupdate!' });
+    });
+});
+
+app.delete('/produk/:id_produk', (req, res) => {
+    const { id_produk } = req.params;
+    const sql = 'DELETE FROM produk WHERE id_produk = ?';
+    db.query(sql, [id_produk], (err, result) => {
+        if (err) return res.status(500).json({ error: err.sqlMessage });
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                message: 'Produk tidak ditemukan'
+            })
+        }
+        res.json({ message: 'Produk berhasil di hapus!' });
+    });
+});
+
 app.get('/kategori', (req, res) => {
     const sql = 'SELECT * FROM kategori';
     db.query(sql, (err, results) => {
