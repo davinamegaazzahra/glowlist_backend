@@ -44,7 +44,7 @@ app.post('/produk', (req, res) => {
     }
 
     const sql = 'INSERT INTO produk (judul, deskripsi, harga, id_kategori, nama_file, tgl_input) VALUES (?, ?, ?, ?, ?, NOW())';
-    db.query(sql, [judul, deskripsi, harga, id_kategori], (err, result) => {
+    db.query(sql, [judul, deskripsi, harga, id_kategori, nama_file, tgl_input], (err, result) => {
         if (err) return res.status(500).json({ error: err.sqlMessage });
         res.json({
             message: 'Produk berhasil ditambahkan!',
