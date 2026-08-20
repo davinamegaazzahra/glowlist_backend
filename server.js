@@ -29,7 +29,18 @@ app.get('/', (req, res) => {
 });
 
 app.get('/produk', (req, res) => {
-    const sql = 'SELECT * FROM produk';
+    const sql = `
+        SELECT 
+            id_produk,
+            judul,
+            deskripsi,
+            harga,
+            id_kategori,
+            nama_file,
+            DATE_FORMAT(tgl_input, '%d-%m-%Y') AS tgl_input
+        FROM produk
+    `;
+
     db.query(sql, (err, results) => {
         if (err) return res.status(500).json({ error: err });
         res.json(results);
@@ -86,6 +97,25 @@ app.delete('/produk/:id_produk', (req, res) => {
             })
         }
         res.json({ message: 'Produk berhasil di hapus!' });
+    });
+});
+
+app.get('/produk/:id_produk', (req, res) => {
+    const sql = `
+        SELECT 
+            id_produk,
+            judul,
+            deskripsi,
+            harga,
+            id_kategori,
+            nama_file,
+            DATE_FORMAT(tgl_input, '%d-%m-%Y') AS tgl_input
+        FROM produk
+    `;
+
+    db.query(sql, (err, results) => {
+        if (err) return res.status(500).json({ error: err });
+        res.json(results);
     });
 });
 
