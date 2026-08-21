@@ -2,6 +2,8 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 const PORT = 5000;
+const jwt = require('jsonwebtoken');
+const authJWT = require('./middleware');
 
 app.use(cors());
 app.use(express.json());
@@ -28,7 +30,7 @@ app.get('/', (req, res) => {
     res.send('Selamat Datang di GlowList API! ');
 });
 
-app.get('/produk', (req, res) => {
+app.get('/produk', authJWT, (req, res) => {
     const sql = `
         SELECT 
             id_produk,
@@ -47,7 +49,7 @@ app.get('/produk', (req, res) => {
     });
 });
 
-app.post('/produk', (req, res) => {
+app.post('/produk', authJWT, (req, res) => {
     const { judul, deskripsi, harga, id_kategori, nama_file, tgl_input } = req.body;
 
     if (!judul || !harga || !deskripsi) {
@@ -64,7 +66,7 @@ app.post('/produk', (req, res) => {
     });
 });
 
-app.put('/produk/:id_produk', (req, res) => {
+app.put('/produk/:id_produk', authJWT, (req, res) => {
     const { id_produk } = req.params;
     const { judul, deskripsi, harga, id_kategori, nama_file, tgl_input } = req.body;
 
@@ -85,7 +87,7 @@ app.put('/produk/:id_produk', (req, res) => {
     });
 });
 
-app.delete('/produk/:id_produk', (req, res) => {
+app.delete('/produk/:id_produk', authJWT, (req, res) => {
     const { id_produk } = req.params;
     const sql = 'DELETE FROM produk WHERE id_produk = ?';
     db.query(sql, [id_produk], (err, result) => {
@@ -141,15 +143,15 @@ app.post('/pengguna', async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, saltRounds);
         const sql = 'INSERT INTO pengguna (nama, email, password, no_hp) VALUES (?, ?, ?, ?)';
         db.query(sql, [nama, email, hashedPassword, no_hp], (err, result) => {
-            if (err.code === 'ER_DUP_ENTRY'){
+            if (err.code === 'ER_DUP_ENTRY') {
                 return res.status(400).json({
                     message: 'Email sudah terdaftar, gunakan email lain'
                 });
-            } 
-            return res.status(500).json({ 
-                error: 'Terjadi kesalahan pada server' 
+            }
+            return res.status(500).json({
+                error: 'Terjadi kesalahan pada server'
             });
-            
+
             res.json({
                 message: 'Akun berhasil dibuat!',
                 id_pengguna: result.insertId
@@ -158,6 +160,54 @@ app.post('/pengguna', async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: 'Gagal mengenkripsi password' });
     }
+});
+
+app.get('/pengguna/me', authJWT, async (req, res) => {
+    const id_pengguna = req.user.id;
+
+    const sql =
+        `SELECT id_pengguna, nama, email, no_hp FROM pengguna WHERE id_pengguna = ?`;
+
+    db.query(sql, [id_pengguna], (err, result) => {
+        if (err) {
+            return res.status(500).json({
+                message: 'Gagal mengambil profil pengguna'
+            });
+        }
+        res.json(result[0]);
+    });
+})
+
+app.post('/login', (req, res) => {
+    const { email, password } = req.body;
+    const sql = 'SELECT * FROM pengguna WHERE email = ?';
+
+    db.query(sql, [email], (err, result) => {
+        if (err) return res.status(500).json({ error: err.sqlMessage });
+        if (result.length === 0) {
+            return res.status(404).json({ message: 'Akun tidak ditemukan' });
+        }
+
+        const user = result[0];
+        const passwordIsValid = bcrypt.compareSync(password, user.password);
+
+        if (!passwordIsValid) {
+            return res.status(401).json({ message: 'Password salah' });
+        }
+
+        const token = jwt.sign(
+            { id: user.id_pengguna },
+            'glowlistrahasia',
+            { expiresIn: 86400 }
+        );
+
+        res.status(200).json({
+            auth: true,
+            token,
+            id_pengguna: user.id_pengguna,
+            nama: user.nama
+        });
+    });
 });
 
 app.listen(PORT, () => {
